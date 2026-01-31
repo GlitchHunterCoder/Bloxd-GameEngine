@@ -59,6 +59,7 @@ This prevents shortcut dependencies and architectural collapse.
 - Tick system
 - Eval
 - IU behavior
+
 Characteristics:
 - No structure
 - No safety
@@ -69,6 +70,7 @@ Characteristics:
 - Generator-based execution
 - Time control
 - Cleanup and interruption handling
+
 Characteristics:
 - Full system built on Layer 0
 - Exists to tame raw behavior
@@ -81,6 +83,7 @@ Structured access to:
 - World / Player / Entity representations
 - Deterministic handles
 - Lifecycle-aware views
+
 Characteristics:
 - Civilized low-level API
 - No high-level gameplay logic
@@ -91,6 +94,7 @@ Characteristics:
 - Event routing
 - Callback attachment
 - Command surfaces
+
 Characteristics:
 - First appearance of meaning
 - Still un-orchestrated
@@ -100,6 +104,7 @@ Characteristics:
 - State systems
 - Entity logic
 - Zones, behaviors, orchestration
+
 Characteristics:
 - Core backend of the game engine
 - Systems that maintain themselves
@@ -108,6 +113,7 @@ Characteristics:
 - Stable scripting API
 - Clean mental model for coders
 - Engine-level guarantees
+
 Characteristics:
 - Primary surface for gameplay code
 - Built for extension, not hacking previous layers
