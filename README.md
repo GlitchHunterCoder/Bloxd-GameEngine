@@ -1,15 +1,50 @@
+<details>
+
+<summary>
+
 > # "Bloxd io is a game engine, Just you wait..."
-> \- GlitchHunter
->   \- 18/2/2025
-...
-...
+> \- GlitchHunter - 18/2/2025
+
+</summary>
+
+<details>
+
+<summary>
+
 ...its time i say this
 
-ive kinda been working on this for a while in the background, posting small snippets of codes, the async engine was just the beginning
-i needed something to deal with time and interruptions
+ive kinda been working on this for a while in the background,
+posting small snippets of codes, 
+the async engine was just the beginning,
+i needed something to deal with time and interruptions,
+but now we have that done, 
+and with eval handling interruptions,
+there is nothing stopping this project from being made,
+so behold...
 
-well its time, im back at it again, this time
+</summary>
+
+<details>
+
+<summary>
+
+# [[ BLOXD.IO GAME ENGINE ]]
+
+</summary>
+
+## FULLY INGAME
+## FULLY CUSTOMISIBLE
+## FULLY LAYERED
+
+well its time, im back at it again, this time, we have got the following features
+
+<details>
+<summary>
+  
 # BACK-END
+
+</summary>
+
 - General Ideas
   - redefining the api as a structured object, so it follows the rules below (1)
     - if A contains B ingame, class A contains class B in code
@@ -166,7 +201,15 @@ well its time, im back at it again, this time
       //and pretty much nukes itself until every code is broken due to global this being gone
       //but does this in a controlled manner
       ```
+
+</details>
+<details>
+<summary>
+  
 # FRONT-END
+
+</summary>
+  
   - Editing
     - Click and Create
       - will allow modules to be easily added
@@ -181,7 +224,16 @@ well its time, im back at it again, this time
       - the front end ease is for players who dont want to code that much, however if players do want to code directly, well ill expose the engines inner workings and the api i will provide it for your usage
     - git like editing and backend variables resolving
       - it will be based on git commands to commit to a branch but the main idea is pretty much code editing time travel, (add creates a new seed, add creates a new space branch, commit creates or builds on a time branch, reset --hard prunes the time tree, reset soft, moves the temporal edit point to a previous point ...), with the following models (time tree & pointer, space tree & pointer, temp & perm, multiple instances, (really just many branches of time tree))
+
+</details>
+<details>
+
+<summary>
+
 # IMPLEMENTATION IDEAS
+
+</summary>
+
 ```js
 //global scoped fix, using polyfill idea
 (()=>{
@@ -221,3 +273,8 @@ function test() {
 
 test()
 ```
+</details>
+
+</details>
+
+</details>
