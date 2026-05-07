@@ -259,17 +259,17 @@ console.log(whoops) //throws error, forceLocal cleaned it up
 //scope inspector, useful for custom variable scoping
 function inspectScope() {
   try {
-    throw new Error();
+    throw new Error(); //throws new error to extract stack generated
   } catch (e) {
-    return String(e.stack)
-    .split("\n")
-    .slice(1)
-    .map(line =>
+    return e.stack //parses stack, details on how below
+    .trim() //removed unnecessary "\n" so next step can split each stack element one by one
+    .split("\n") //does the split
+    .map(line => 
       line
-        .trim()
-        .replace(/^at\s+/, "")
-        .replace(/\s+/g, " ")
-    ).slice(0, -1)
+        .trim() //trims unnecessary spaces either side, due to indentation or otherwisw
+        .replace(/^at\s+/, "") //removed repeated element "at ", so pure stack is left
+        .replace(/\s+/g, " ") //normalised spaces to always 1 space
+    )
   }
 }
 
