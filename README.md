@@ -238,16 +238,22 @@ well its time, im back at it again, this time, we have got the following feature
 
 ```js
 //global scoped fix, using polyfill idea
-(()=>{
-  let length = Object.getOwnPropertyNames(globalThis).length
-  console.log(length)
-  let scoped = {}
-  whoops = {}
-  let globals = () => Object.getOwnPropertyNames(globalThis).slice(length)
-  console.log(globals())
-  globals().forEach(e=>{delete globalThis[e]})
-  console.log(globals())
-})()
+let forceLocal=(fn)=>{
+  let before = Reflect.ownKeys(globalThis) //snapshot keys before
+  fn() //run function
+  let after = Reflect.ownKeys(globalThis) //snapshot keys after
+  let globals = after.filter(e=>!before.includes(e)) //is in after but not before -> was added by fn
+  globals.map(e=>{delete globalThis[e]}) //delete those added
+}
+
+let fn = () => {
+  let scoped = 0 //is scoped
+  whoops = 0 //is not scoped, forceLocal will handle it
+}
+
+forceLocal(fn)
+
+console.log(whoops) //throws error, forceLocal cleaned it up
 ```
 ```js
 //scope inspector, useful for custom variable scoping
