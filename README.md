@@ -264,7 +264,7 @@ function inspectScope() {
     return e.stack //parses stack, details on how below
     .trim() //removed unnecessary "\n" so next step can split each stack element one by one
     .split("\n") //does the split
-    .slice(1)
+    .slice(1) //removes itself "inspectScope" from stack
     .map(line => 
       line
         .trim() //trims unnecessary spaces either side, due to indentation or otherwisw
