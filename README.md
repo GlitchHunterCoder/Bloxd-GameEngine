@@ -264,11 +264,13 @@ function inspectScope() {
     return e.stack //parses stack, details on how below
     .trim() //removed unnecessary "\n" so next step can split each stack element one by one
     .split("\n") //does the split
+    .slice(1)
     .map(line => 
       line
-        .trim() //trims unnecessary spaces either side, due to indentation or otherwise
-        .replace(/^at\s+/, "") //removed repeated element "at ", so pure stack is left
-        .replace(/\s+/g, " ") //normalised spaces to always 1 space
+        .trim() //trims unnecessary spaces either side, due to indentation or otherwisw
+        .replace(/^at\s+/, "") //removed repeated element "at ", so pure stack snippet is left
+        .replace(/\s+/g, " ") //normalised spaces to always 1 space for next step
+        .split(" ") //splits the spaces to get more detail on snippet "ErrorPlace (<input>:LineNumber)"
     )
   }
 }
