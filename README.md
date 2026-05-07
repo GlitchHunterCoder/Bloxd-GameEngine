@@ -266,7 +266,7 @@ function inspectScope() {
     .split("\n") //does the split
     .map(line => 
       line
-        .trim() //trims unnecessary spaces either side, due to indentation or otherwisw
+        .trim() //trims unnecessary spaces either side, due to indentation or otherwise
         .replace(/^at\s+/, "") //removed repeated element "at ", so pure stack is left
         .replace(/\s+/g, " ") //normalised spaces to always 1 space
     )
