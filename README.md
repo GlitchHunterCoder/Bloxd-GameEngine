@@ -283,6 +283,46 @@ function test() {
 
 test()
 ```
+```js
+//Scope Extractor, extracts references to each function
+let Scope = {
+  calls:[],
+  getCallStack:function(){
+    this.calls = []
+    let step = arguments.callee
+    while(step){
+      this.calls.push(step)
+      step = step.caller
+    }
+  }
+}
+
+function Fn1(){
+  Scope.getCallStack()
+}
+
+function Fn2() {
+  Fn1();
+}
+
+function Fn3() {
+  Fn2();
+}
+
+Fn3(1,2,3);
+
+console.log(Scope.calls)
+/*
+[
+  [Function: getCallStack],
+  [Function: Fn1],
+  [Function: Fn2],
+  [Function: Fn3],
+  [Function (anonymous)]
+]
+*/
+```
+
 </details>
 
 </details>
