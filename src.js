@@ -314,16 +314,7 @@ World
     Mesh
 */
 
-//ndarray
-
-var iota = Array(3).fill(1).map((_,i)=>i+1) //dang dependancy culture
-function isBuffer(obj) { return !!obj?.constructor?.isBuffer?.(obj) }
-
-var hasTypedArrays  = ((typeof Float64Array) !== "undefined")
-
-function compare1st(a, b) {
-  return a[0] - b[0]
-}
+//ndarray REWRITE FOR BLOXD CHUNKS
 
 function order() {
   var stride = this.stride
@@ -332,7 +323,7 @@ function order() {
   for(i=0; i<terms.length; ++i) {
     terms[i] = [Math.abs(stride[i]), i]
   }
-  terms.sort(compare1st)
+  terms.sort((a,b)=>a[0]-b[0])
   var result = new Array(terms.length)
   for(i=0; i<result.length; ++i) {
     result[i] = terms[i][1]
@@ -340,104 +331,39 @@ function order() {
   return result
 }
 
-function compileConstructor(dtype, dimension) {
-  var className = ["View", dimension, "d", dtype].join("")
-  if(dimension < 0) {
-    className = "View_Nil" + dtype
-  }
-  var useGetters = (dtype === "generic")
+function compileConstructor(dtype) {
+  var className = "View3d"+dtype
 
-  if(dimension === -1) {
-    //Special case for trivial arrays
-    var code =
-      "function "+className+"(a){this.data=a;};\
-var proto="+className+".prototype;\
-proto.dtype='"+dtype+"';\
-proto.index=function(){return -1};\
-proto.size=0;\
-proto.dimension=-1;\
-proto.shape=proto.stride=proto.order=[];\
-proto.lo=proto.hi=proto.transpose=proto.step=\
-function(){return new "+className+"(this.data);};\
-proto.get=proto.set=function(){};\
-proto.pick=function(){return null};\
-return function construct_"+className+"(a){return new "+className+"(a);}"
-    var procedure = new Function(code)
-    return procedure()
-  } else if(dimension === 0) {
-    //Special case for 0d arrays
-    var code =
-      "function "+className+"(a,d) {\
-this.data = a;\
-this.offset = d\
-};\
-var proto="+className+".prototype;\
-proto.dtype='"+dtype+"';\
-proto.index=function(){return this.offset};\
-proto.dimension=0;\
-proto.size=1;\
-proto.shape=\
-proto.stride=\
-proto.order=[];\
-proto.lo=\
-proto.hi=\
-proto.transpose=\
-proto.step=function "+className+"_copy() {\
-return new "+className+"(this.data,this.offset)\
-};\
-proto.pick=function "+className+"_pick(){\
-return TrivialArray(this.data);\
-};\
-proto.valueOf=proto.get=function "+className+"_get(){\
-return "+(useGetters ? "this.data.get(this.offset)" : "this.data[this.offset]")+
-"};\
-proto.set=function "+className+"_set(v){\
-return "+(useGetters ? "this.data.set(this.offset,v)" : "this.data[this.offset]=v")+"\
-};\
-return function construct_"+className+"(a,b,c,d){return new "+className+"(a,d)}"
-    var procedure = new Function("TrivialArray", code)
-    return procedure(CACHED_CONSTRUCTORS[dtype][0])
-  }
+  var useGetters = (dtype === "generic")
 
   var code = ["'use strict'"]
 
   //Create constructor for view
-  var indices = iota(dimension)
-  var args = indices.map(function(i) { return "i"+i })
-  var index_str = "this.offset+" + indices.map(function(i) {
-        return "this.stride[" + i + "]*i" + i
-      }).join("+")
-  var shapeArg = indices.map(function(i) {
-      return "b"+i
-    }).join(",")
-  var strideArg = indices.map(function(i) {
-      return "c"+i
-    }).join(",")
+  var indices = [0,1,2]
+  var args = ["i0","i1","i2"]
+  var index_str = "this.offset + this.stride[0]*i0 + this.stride[1]*i1 + this.stride[2]*i2"
+      
+  var shapeArg = "b0,b1,b2"
+  var strideArg = "c0,c1,c2"
   code.push(
-    "function "+className+"(a," + shapeArg + "," + strideArg + ",d){this.data=a",
-      "this.shape=[" + shapeArg + "]",
-      "this.stride=[" + strideArg + "]",
+    "function "+className+"(a,b0,b1,b2,c0,c1,c2,d){this.data=a",
+      "this.shape=[b0,b1,b2]",
+      "this.stride=[c0,c1,c2]",
       "this.offset=d|0}",
     "var proto="+className+".prototype",
     "proto.dtype='"+dtype+"'",
-    "proto.dimension="+dimension)
+    "proto.dimension=3")
 
   //view.size:
   code.push("Object.defineProperty(proto,'size',{get:function "+className+"_size(){\
-return "+indices.map(function(i) { return "this.shape["+i+"]" }).join("*"),
+return this.shape[0]*this.shape[1]*this.shape[2]",
 "}})")
 
-  //view.order:
-  if(dimension === 1) {
-    code.push("proto.order=[0]")
-  } else {
-    code.push("Object.defineProperty(proto,'order',{get:")
-    if(dimension < 4) {
-      code.push("function "+className+"_order(){")
-      if(dimension === 2) {
-        code.push("return (Math.abs(this.stride[0])>Math.abs(this.stride[1]))?[1,0]:[0,1]}})")
-      } else if(dimension === 3) {
-        code.push(
+  code.push("Object.defineProperty(proto,'order',{get:")
+
+  code.push("function "+className+"_order(){")
+
+  code.push(
 "var s0=Math.abs(this.stride[0]),s1=Math.abs(this.stride[1]),s2=Math.abs(this.stride[2]);\
 if(s0>s1){\
 if(s1>s2){\
@@ -454,94 +380,76 @@ return [0,1,2];\
 }else{\
 return [0,2,1];\
 }}})")
-      }
-    } else {
-      code.push("ORDER})")
-    }
-  }
 
   //view.set(i0, ..., v):
   code.push(
-"proto.set=function "+className+"_set("+args.join(",")+",v){")
+"proto.set=function "+className+"_set(i0,i1,i2,v){")
   if(useGetters) {
-    code.push("return this.data.set("+index_str+",v)}")
+    code.push("return this.data.set(this.offset + this.stride[0]*i0 + this.stride[1]*i1 + this.stride[2]*i2,v)}")
   } else {
-    code.push("return this.data["+index_str+"]=v}")
+    code.push("return this.data[this.offset + this.stride[0]*i0 + this.stride[1]*i1 + this.stride[2]*i2]=v}")
   }
 
   //view.get(i0, ...):
-  code.push("proto.get=function "+className+"_get("+args.join(",")+"){")
+  code.push("proto.get=function "+className+"_get(i0,i1,i2){")
   if(useGetters) {
-    code.push("return this.data.get("+index_str+")}")
+    code.push("return this.data.get(this.offset + this.stride[0]*i0 + this.stride[1]*i1 + this.stride[2]*i2)}")
   } else {
-    code.push("return this.data["+index_str+"]}")
+    code.push("return this.data[this.offset + this.stride[0]*i0 + this.stride[1]*i1 + this.stride[2]*i2]}")
   }
 
   //view.index:
   code.push(
-    "proto.index=function "+className+"_index(", args.join(), "){return "+index_str+"}")
+    "proto.index=function "+className+"_index(", "i0,i1,i2", "){return this.offset + this.stride[0]*i0 + this.stride[1]*i1 + this.stride[2]*i2}")
 
   //view.hi():
-  code.push("proto.hi=function "+className+"_hi("+args.join(",")+"){return new "+className+"(this.data,"+
-    indices.map(function(i) {
-      return ["(typeof i",i,"!=='number'||i",i,"<0)?this.shape[", i, "]:i", i,"|0"].join("")
-    }).join(",")+","+
-    indices.map(function(i) {
-      return "this.stride["+i + "]"
-    }).join(",")+",this.offset)}")
+  code.push("proto.hi=function "+className+"_hi(i0,i1,i2){return new "+className+"(this.data,(typeof i0!=='number'||i0<0)?this.shape[0]:i0|0,(typeof i1!=='number'||i1<0)?this.shape[1]:i1|0,(typeof i2!=='number'||i2<0)?this.shape[2]:i2|0,this.stride[0],this.stride[1],this.stride[2],this.offset)}")
+    
 
   //view.lo():
-  var a_vars = indices.map(function(i) { return "a"+i+"=this.shape["+i+"]" })
-  var c_vars = indices.map(function(i) { return "c"+i+"=this.stride["+i+"]" })
-  code.push("proto.lo=function "+className+"_lo("+args.join(",")+"){var b=this.offset,d=0,"+a_vars.join(",")+","+c_vars.join(","))
-  for(var i=0; i<dimension; ++i) {
-    code.push(
-"if(typeof i"+i+"==='number'&&i"+i+">=0){\
-d=i"+i+"|0;\
-b+=c"+i+"*d;\
-a"+i+"-=d}")
-  }
-  code.push("return new "+className+"(this.data,"+
-    indices.map(function(i) {
-      return "a"+i
-    }).join(",")+","+
-    indices.map(function(i) {
-      return "c"+i
-    }).join(",")+",b)}")
+  var a_vars = ["a0=this.shape[0]","a1=this.shape[1]","a2=this.shape[2]"]
+  
+  
+  var c_vars = ["c0=this.stride[0]","c1=this.stride[1]","c2=this.stride[2]"]
+  
+  
+  code.push("proto.lo=function "+className+"_lo(i0,i1,i2){var b=this.offset,d=0,a0=this.shape[0],a1=this.shape[1],a2=this.shape[2],c0=this.stride[0],c1=this.stride[1],c2=this.stride[2]")
+
+code.push(
+"if(typeof i0==='number'&&i0>=0){d=i0|0;b+=c0*d;a0-=d}"
+)
+code.push(
+"if(typeof i1==='number'&&i1>=0){d=i1|0;b+=c1*d;a1-=d}"
+)
+code.push(
+"if(typeof i2==='number'&&i2>=0){d=i2|0;b+=c2*d;a2-=d}"
+)
+  
+  code.push("return new "+className+"(this.data,a0,a1,a2,c0,c1,c2,b)}")
+    
+    
 
   //view.step():
-  code.push("proto.step=function "+className+"_step("+args.join(",")+"){var "+
-    indices.map(function(i) {
-      return "a"+i+"=this.shape["+i+"]"
-    }).join(",")+","+
-    indices.map(function(i) {
-      return "b"+i+"=this.stride["+i+"]"
-    }).join(",")+",c=this.offset,d=0,ceil=Math.ceil")
-  for(var i=0; i<dimension; ++i) {
-    code.push(
-"if(typeof i"+i+"==='number'){\
-d=i"+i+"|0;\
-if(d<0){\
-c+=b"+i+"*(a"+i+"-1);\
-a"+i+"=ceil(-a"+i+"/d)\
-}else{\
-a"+i+"=ceil(a"+i+"/d)\
-}\
-b"+i+"*=d\
-}")
-  }
-  code.push("return new "+className+"(this.data,"+
-    indices.map(function(i) {
-      return "a" + i
-    }).join(",")+","+
-    indices.map(function(i) {
-      return "b" + i
-    }).join(",")+",c)}")
+  code.push("proto.step=function "+className+"_step(i0,i1,i2){var a0=this.shape[0],a1=this.shape[1],a2=this.shape[2],b0=this.stride[0],b1=this.stride[1],b2=this.stride[2],c=this.offset,d=0,ceil=Math.ceil")
+    
+    
+    
+code.push(
+"if(typeof i0==='number'){d=i0|0;if(d<0){c+=b0*(a0-1);a0=ceil(-a0/d)}else{a0=ceil(a0/d)}b0*=d}"
+)
+code.push(
+"if(typeof i1==='number'){d=i1|0;if(d<0){c+=b1*(a1-1);a1=ceil(-a1/d)}else{a1=ceil(a1/d)}b1*=d}"
+)
+code.push(
+"if(typeof i2==='number'){d=i2|0;if(d<0){c+=b2*(a2-1);a2=ceil(-a2/d)}else{a2=ceil(a2/d)}b2*=d}"
+)
+
+  code.push("return new "+className+"(this.data,a0,a1,a2,b0,b1,b2,c)}")
 
   //view.transpose():
-  var tShape = new Array(dimension)
-  var tStride = new Array(dimension)
-  for(var i=0; i<dimension; ++i) {
+  var tShape = new Array(3)
+  var tStride = new Array(3)
+  for(var i=0; i<3; ++i) {
     tShape[i] = "a[i"+i+"]"
     tStride[i] = "b[i"+i+"]"
   }
@@ -551,7 +459,7 @@ b"+i+"*=d\
 
   //view.pick():
   code.push("proto.pick=function "+className+"_pick("+args+"){var a=[],b=[],c=this.offset")
-  for(var i=0; i<dimension; ++i) {
+  for(var i=0; i<3; ++i) {
     code.push("if(typeof i"+i+"==='number'&&i"+i+">=0){c=(c+this.stride["+i+"]*i"+i+")|0}else{a.push(this.shape["+i+"]);b.push(this.stride["+i+"])}")
   }
   code.push("var ctor=CTOR_LIST[a.length+1];return ctor(this.data,a,b,c)}")
@@ -571,38 +479,14 @@ b"+i+"*=d\
 }
 
 function arrayDType(data) {
-  if(isBuffer(data)) {
-    return "buffer"
+  if(!!data?.constructor?.isBuffer?.(data)) return "buffer"
+  if(typeof Float64Array !== "undefined") {
+    const type = Object.prototype.toString.call(data)
+      .slice(8, -6)
+      .toLowerCase()
+    if(type in CACHED_CONSTRUCTORS) return type
   }
-  if(hasTypedArrays) {
-    switch(Object.prototype.toString.call(data)) {
-      case "[object Float64Array]":
-        return "float64"
-      case "[object Float32Array]":
-        return "float32"
-      case "[object Int8Array]":
-        return "int8"
-      case "[object Int16Array]":
-        return "int16"
-      case "[object Int32Array]":
-        return "int32"
-      case "[object Uint8Array]":
-        return "uint8"
-      case "[object Uint16Array]":
-        return "uint16"
-      case "[object Uint32Array]":
-        return "uint32"
-      case "[object Uint8ClampedArray]":
-        return "uint8_clamped"
-      case "[object BigInt64Array]":
-        return "bigint64"
-      case "[object BigUint64Array]":
-        return "biguint64"
-    }
-  }
-  if(Array.isArray(data)) {
-    return "array"
-  }
+  if(Array.isArray(data)) return "array"
   return "generic"
 }
 
@@ -616,18 +500,11 @@ var CACHED_CONSTRUCTORS = {
   "uint16":[],
   "uint32":[],
   "array":[],
-  "uint8_clamped":[],
   "bigint64": [],
   "biguint64": [],
   "buffer":[],
   "generic":[]
 }
-
-;(function() {
-  for(var id in CACHED_CONSTRUCTORS) {
-    CACHED_CONSTRUCTORS[id].push(compileConstructor(id, -1))
-  }
-});
 
 function wrappedNDArrayCtor(data, shape, stride, offset) {
   if(data === undefined) {
@@ -658,21 +535,17 @@ function wrappedNDArrayCtor(data, shape, stride, offset) {
   var dtype = arrayDType(data)
   var ctor_list = CACHED_CONSTRUCTORS[dtype]
   while(ctor_list.length <= d+1) {
-    ctor_list.push(compileConstructor(dtype, ctor_list.length-1))
+    ctor_list.push(compileConstructor(dtype))
   }
   var ctor = ctor_list[d+1]
   return ctor(data, shape, stride, offset)
 }
 
-module.exports = wrappedNDArrayCtor
+let ndarray = wrappedNDArrayCtor
 
-function iota(n) {
-  var result = new Array(n)
-  for(var i=0; i<n; ++i) {
-    result[i] = i
-  }
-  return result
-}
+var mat = ndarray(new Float64Array([1]), [2,2,2])
+
+console.log(mat)
 
 //Retry of making game engine
 
