@@ -365,7 +365,8 @@ let snapshot = function (obj) {
   });
   
   active = true
-})();  
+})();
+```
 
 </details>
 
