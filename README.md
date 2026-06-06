@@ -110,35 +110,6 @@ well its time, im back at it again, this time, we have got the following feature
       console.log("... Async Engine")
     }())
     ```
-    - replace globalThis with a proxy, to be able to simulate IFrames
-    ```js
-    ;(()=>{
-      let {Reflect, Object, Proxy, Date} = globalThis
-      
-      let snapshot = function (obj) {
-        return Reflect.ownKeys(obj).reduce(function(o, k) {
-          try { o[k] = obj[k] } catch(e) {}
-          return o
-        }, {})
-      }
-
-      // 1. Snapshot the current globalThis into IFrame[0]
-      let IFrame = [snapshot(globalThis)]
-
-      // 2. Wipe globalThis clean
-      Reflect.ownKeys(globalThis).filter(k=>k !== "globalThis").forEach(k => {
-        try { Reflect.deleteProperty(globalThis, k) } catch(e) {}
-      });
-
-      
-      // 3. Set the prototype of globalThis to a proxy of the snapshot
-      //    so any property not found locally falls through to IFrame[0]
-      Reflect.setPrototypeOf(globalThis, new Proxy(IFrame[0], {}))
-
-      // 4. This now lives ONLY on the IFrame globalThis
-      IFrame[0].Frame = 0
-    })();
-    ```
 - what ill do better than bloxd
   - Code Writing (4)
     - handling code
@@ -351,6 +322,50 @@ console.log(Scope.calls)
 ]
 */
 ```
+```js
+//Observe GlobalThis through a proxy
+;(()=>{
+  let {Reflect, Object, Proxy, Date} = globalThis
+  let active = false
+
+let snapshot = function (obj) {
+  return Reflect.ownKeys(obj).reduce(function(o, k) {
+    try { o[k] = obj[k] } catch(e) {}
+    return o
+  }, {})
+}
+    
+  let trap = Object.fromEntries(
+    ["set","get"].map(op => [op, (...args) => {
+      active = false
+      try{
+        console.log(args[1])
+        return Reflect[op](...args)
+      }finally{
+        active = true
+      }
+    }])
+  )
+
+  let HANDLE = new Proxy({}, {
+    get(_, t) {
+      return (active ? trap[t] : void 0)
+    }
+  });
+
+
+  // 3. Set the prototype of globalThis to a proxy of the snapshot
+  //    so any property not found locally falls through to IFrame[0]
+  Reflect.setPrototypeOf(globalThis, new Proxy(snapshot(globalThis), HANDLE))
+
+
+  // 2. Wipe globalThis clean
+  Reflect.ownKeys(globalThis).filter(k=>k !== "globalThis").forEach(k => {
+    try { Reflect.deleteProperty(globalThis, k) } catch(e) {}
+  });
+  
+  active = true
+})();  
 
 </details>
 
