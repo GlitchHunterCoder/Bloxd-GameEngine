@@ -328,12 +328,12 @@ console.log(Scope.calls)
   let {Reflect, Object, Proxy, Date} = globalThis
   let active = false
 
-let snapshot = function (obj) {
-  return Reflect.ownKeys(obj).reduce(function(o, k) {
-    try { o[k] = obj[k] } catch(e) {}
-    return o
-  }, {})
-}
+  let snapshot = function (obj) {
+    return Reflect.ownKeys(obj).reduce(function(o, k) {
+      try { o[k] = obj[k] } catch(e) {}
+      return o
+    }, {})
+  }
     
   let trap = Object.fromEntries(
     ["set","get"].map(op => [op, (...args) => {
@@ -353,13 +353,8 @@ let snapshot = function (obj) {
     }
   });
 
-
-  // 3. Set the prototype of globalThis to a proxy of the snapshot
-  //    so any property not found locally falls through to IFrame[0]
   Reflect.setPrototypeOf(globalThis, new Proxy(snapshot(globalThis), HANDLE))
 
-
-  // 2. Wipe globalThis clean
   Reflect.ownKeys(globalThis).filter(k=>k !== "globalThis").forEach(k => {
     try { Reflect.deleteProperty(globalThis, k) } catch(e) {}
   });
