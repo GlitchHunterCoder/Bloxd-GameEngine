@@ -390,6 +390,14 @@ Player = class {
 
 // Prod Code (Being put together)
 
+Proxy.void = (handler) => {
+    let target = function(){}.bind()
+    Reflect.ownKeys(target).map(e=>delete target[e])
+    target.__proto__ = null
+
+    return new Proxy(target, handler)
+}
+
 globalThis.SafeProxy = (T, H) => {
     let D = function(){}.bind(null);
     
@@ -406,7 +414,7 @@ globalThis.SafeProxy = (T, H) => {
         getOwnPropertyDescriptor:()=>void 0,
     }
     
-    let P = new Proxy(D,Object.fromEntries(
+    let P = Proxy.void(Object.fromEntries(
         Reflect.ownKeys(Reflect).map(op=>[op, (_, ...a)=>{
             let trap = (H[op] ?? Reflect[op])
             let out = trap(T, ...a)
