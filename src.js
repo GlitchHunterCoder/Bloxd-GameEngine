@@ -388,7 +388,33 @@ Player = class {
   }
 }
 
+// Prod Code (Being put together)
 
-
+globalThis.SafeProxy = (T, H) => {
+    let D = function(){}.bind(null);
+    
+    delete D.name
+    delete D.length
+    D.__proto__ = null
+    
+    let R = {
+        isExtensible:()=>true,
+        preventExtensions:()=>false,
+        set:()=>false,
+        defineProperty:()=>false,
+        deleteProperty:()=>false,
+        getOwnPropertyDescriptor:()=>void 0,
+    }
+    
+    let P = new Proxy(D,Object.fromEntries(
+        Reflect.ownKeys(Reflect).map(op=>[op, (_, ...a)=>{
+            let trap = (H[op] ?? Reflect[op])
+            let out = trap(T, ...a)
+            return (R[op] ?? (()=>out))()
+        }])
+    ))
+    
+    return P
+}
 
 
